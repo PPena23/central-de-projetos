@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Central de Projetos</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2330;--mut:#6b7385;--bd:#e2e5ec;--ac:#2f6fed}
+@media(prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1b2030;--tx:#e8ebf3;--mut:#8f98ad;--bd:#2a3145}}
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--bd)}
+h1{font-size:18px;margin:0 auto 0 0}select,button{font:inherit;padding:6px 10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:6px;cursor:pointer}
+main{padding:20px;display:grid;gap:24px}h2{font-size:15px;margin:0 0 10px}
+.kanban{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.col{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px;min-height:120px}
+.col h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:0 0 8px}
+.card{border:1px solid var(--bd);border-left:4px solid var(--c,var(--ac));border-radius:6px;padding:8px;margin-bottom:8px;background:var(--bg)}
+.card small{color:var(--mut);display:block;margin-top:2px}
+.cal{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px}
+.calhead{display:flex;gap:8px;align-items:center;margin-bottom:8px}.calhead b{margin-right:auto;text-transform:capitalize}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{font-size:11px;color:var(--mut);text-align:center}
+.day{min-height:78px;border:1px solid var(--bd);border-radius:6px;padding:4px;font-size:12px;overflow:hidden}
+.day.out{opacity:.4}.day.today{outline:2px solid var(--ac)}
+.ev{display:block;margin-top:2px;padding:1px 4px;border-radius:3px;background:var(--c,var(--ac));color:#fff;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{color:var(--mut);font-size:13px}
+</style></head><body>
+<header><h1>Central de Projetos</h1>
+<select id="fp"><option value="">Todos os projetos</option></select>
+<select id="fc"><option value="">Todas as categorias</option></select></header>
+<main>
+<section><h2>Kanban</h2><div class="kanban" id="kanban"></div></section>
+<section><h2>Calendário</h2><div class="cal"><div class="calhead"><button id="prev">‹</button><b id="mes"></b><button id="next">›</button><button id="hoje">Hoje</button></div><div class="grid" id="cal"></div></div></section>
+</main>
+<script src="data.js"></script>
+<script>
+const D=window.CENTRAL,$=s=>document.querySelector(s);
+const PAL=["#2f6fed","#e5484d","#30a46c","#f5a524","#8e4ec6","#12a594","#d6409f","#6b7385"];
+const proj=Object.fromEntries(D.projetos.map((p,i)=>[p.id,{...p,cor:p.cor||PAL[i%PAL.length]}]));
+D.projetos.forEach(p=>$("#fp").add(new Option(p.nome,p.id)));
+D.categorias.forEach(c=>$("#fc").add(new Option(c,c)));
+let ref=new Date();ref.setDate(1);
+const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+function tarefas(){const fp=$("#fp").value,fc=$("#fc").value;
+ return D.tarefas.filter(t=>(!fp||t.projeto===fp)&&(!fc||(proj[t.projeto]||{}).categoria===fc));}
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function ocorre(t,dia){if(!t.data)return false;if(t.data===dia)return true;
+ const a=new Date(t.data+"T00:00"),b=new Date(dia+"T00:00");if(b<a||!t.recorrencia)return false;
+ if(t.recorrencia==="diaria")return true;if(t.recorrencia==="semanal")return a.getDay()===b.getDay();
+ if(t.recorrencia==="mensal")return a.getDate()===b.getDate();return false;}
+function render(){const ts=tarefas();
+ $("#kanban").innerHTML=D.colunas.map(c=>{const l=ts.filter(t=>t.coluna===c.id);
+  return `<div class="col"><h3>${esc(c.nome)} (${l.length})</h3>${l.map(t=>`<div class="card" style="--c:${(proj[t.projeto]||{}).cor}"><b>${esc(t.titulo)}</b><small>${esc((proj[t.projeto]||{}).nome||t.projeto)}${t.data?" · "+esc(t.data.split("-").reverse().join("/")):""}</small></div>`).join("")||'<div class="empty">—</div>'}</div>`}).join("");
+ const y=ref.getFullYear(),m=ref.getMonth(),ini=new Date(y,m,1-ref.getDay()+0);
+ $("#mes").textContent=ref.toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+ let h=["D","S","T","Q","Q","S","S"].map(d=>`<div class="dow">${d}</div>`).join("");const hoje=iso(new Date());
+ const s0=new Date(y,m,1);s0.setDate(1-s0.getDay());
+ for(let i=0;i<42;i++){const d=new Date(s0);d.setDate(s0.getDate()+i);const k=iso(d);
+  const ev=ts.filter(t=>t.coluna!=="feito"&&ocorre(t,k)).map(t=>`<span class="ev" style="--c:${(proj[t.projeto]||{}).cor}" title="${esc(t.titulo)}">${esc(t.titulo)}</span>`).join("");
+  h+=`<div class="day${d.getMonth()!==m?" out":""}${k===hoje?" today":""}">${d.getDate()}${ev}</div>`;}
+ $("#cal").innerHTML=h;}
+$("#prev").onclick=()=>{ref.setMonth(ref.getMonth()-1);render()};
+$("#next").onclick=()=>{ref.setMonth(ref.getMonth()+1);render()};
+$("#hoje").onclick=()=>{ref=new Date();ref.setDate(1);render()};
+$("#fp").onchange=$("#fc").onchange=render;render();
+</script></body></html>
