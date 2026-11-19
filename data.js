@@ -15,5 +15,7 @@ window.CENTRAL = {
   // { id, projeto, titulo, coluna, data, recorrencia(opcional: "diaria"|"semanal"|"mensal"), notas }
   tarefas: [],
   // { id, titulo, notas, data, status: "nova"|"avaliando"|"em andamento"|"virou projeto"|"descartada" }
-  ideias: []
+  ideias: [
+    { id: "i-redes-sociais", titulo: "Criação de conteúdo para redes sociais (Instagram, Facebook, LinkedIn)", notas: "Conectar agentes que criem conteúdo para as 3 redes. Fazer depois do primeiro projeto. Avaliar conjunto de agentes visto no Instagram (link pendente).", data: "2026-11-18", status: "nova" }
+  ]
 };
