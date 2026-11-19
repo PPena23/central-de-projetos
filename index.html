@@ -20,6 +20,8 @@ main{padding:20px;display:grid;gap:24px}h2{font-size:15px;margin:0 0 10px}
 .day{min-height:78px;border:1px solid var(--bd);border-radius:6px;padding:4px;font-size:12px;overflow:hidden}
 .day.out{opacity:.4}.day.today{outline:2px solid var(--ac)}
 .ev{display:block;margin-top:2px;padding:1px 4px;border-radius:3px;background:var(--c,var(--ac));color:#fff;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idform{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.idform input{flex:1;min-width:180px;font:inherit;padding:6px 10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:6px}
+.idea{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:8px;margin-bottom:6px}.idea .t{flex:1}.tag{font-size:11px;color:var(--mut)}
 .empty{color:var(--mut);font-size:13px}
 </style></head><body>
 <header><h1>Central de Projetos</h1>
@@ -28,6 +30,9 @@ main{padding:20px;display:grid;gap:24px}h2{font-size:15px;margin:0 0 10px}
 <main>
 <section><h2>Kanban</h2><div class="kanban" id="kanban"></div></section>
 <section><h2>Calendário</h2><div class="cal"><div class="calhead"><button id="prev">‹</button><b id="mes"></b><button id="next">›</button><button id="hoje">Hoje</button></div><div class="grid" id="cal"></div></div></section>
+<section><h2>Ideias</h2>
+<form class="idform" id="idf"><input id="idt" placeholder="Nova ideia..." required><input id="idn" placeholder="Notas (opcional)"><button>Adicionar</button><button type="button" id="idx">Copiar JSON p/ Claude</button></form>
+<div id="ideias"></div></section>
 </main>
 <script src="data.js"></script>
 <script>
@@ -59,5 +64,16 @@ function render(){const ts=tarefas();
 $("#prev").onclick=()=>{ref.setMonth(ref.getMonth()-1);render()};
 $("#next").onclick=()=>{ref.setMonth(ref.getMonth()+1);render()};
 $("#hoje").onclick=()=>{ref=new Date();ref.setDate(1);render()};
+let loc=[];try{loc=JSON.parse(localStorage.getItem("ideiasLocais")||"[]")}catch(e){}
+const ST=["nova","avaliando","em andamento","virou projeto","descartada"];
+function rIdeias(){const l=[...D.ideias.map(i=>({...i})),...loc.map(i=>({...i,local:1}))];
+ $("#ideias").innerHTML=l.map(i=>`<div class="idea"><div class="t"><b>${esc(i.titulo)}</b>${i.notas?`<small class="tag"> — ${esc(i.notas)}</small>`:""}</div>
+ ${i.local?`<select data-id="${esc(i.id)}">${ST.map(s=>`<option${s===i.status?" selected":""}>${s}</option>`).join("")}</select><button data-del="${esc(i.id)}">✕</button>`:`<span class="tag">${esc(i.status)}</span>`}</div>`).join("")||'<div class="empty">Nenhuma ideia ainda.</div>';}
+const sv=()=>{try{localStorage.setItem("ideiasLocais",JSON.stringify(loc))}catch(e){}rIdeias()};
+$("#idf").onsubmit=e=>{e.preventDefault();loc.unshift({id:"i"+Date.now(),titulo:$("#idt").value,notas:$("#idn").value,data:iso(new Date()),status:"nova"});e.target.reset();sv()};
+$("#ideias").onchange=e=>{const i=loc.find(x=>x.id===e.target.dataset.id);if(i){i.status=e.target.value;sv()}};
+$("#ideias").onclick=e=>{const d=e.target.dataset.del;if(d){loc=loc.filter(x=>x.id!==d);sv()}};
+$("#idx").onclick=()=>navigator.clipboard.writeText(JSON.stringify(loc,null,1)).then(()=>alert("Copiado! Cole no chat para eu registrar no data.js."));
+rIdeias();
 $("#fp").onchange=$("#fc").onchange=render;render();
 </script></body></html>
