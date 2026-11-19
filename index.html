@@ -49,6 +49,7 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 function ocorre(t,dia){if(!t.data)return false;if(t.data===dia)return true;
  const a=new Date(t.data+"T00:00"),b=new Date(dia+"T00:00");if(b<a||!t.recorrencia)return false;
  if(t.recorrencia==="diaria")return true;if(t.recorrencia==="semanal")return a.getDay()===b.getDay();
+ if(t.recorrencia==="quinzenal")return Math.round((b-a)/864e5)%14===0;
  if(t.recorrencia==="mensal")return a.getDate()===b.getDate();return false;}
 function render(){const ts=tarefas();
  $("#kanban").innerHTML=D.colunas.map(c=>{const l=ts.filter(t=>t.coluna===c.id);
